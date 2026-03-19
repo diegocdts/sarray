@@ -1,0 +1,238 @@
+{
+    "ExperimentName": "seam",
+    "Description": "Deepprecs seam",
+    "Version": "1.0",
+    "HomePath": "./resultados/seam",
+    "Overwrite": true,
+    "Debug": false,
+    "DataPreparationMode": "Denoising",
+    "Seed": 42,
+    "LogPath": "./resultados/logs",
+    "ReuseMetadata": false,
+    "AllowTraining": true,
+    "AllowTesting": false,
+    "AllowExport": false,
+    "AllowMetrics": true,
+    "AllowVisualization": true,
+    "CrossValidation": {
+        "Type": "PerFile",
+        "GenerateFolds": true,
+        "Fold": 0,
+        "FoldsPath": "./cross_validation/data"
+    },
+    "DataPreparation": {
+        "DataExport": {
+            "StoreData": false,
+            "UseStoredData": false,
+            "TrainFilePrefix": "train_data",
+            "ValidationFilePrefix": "val_data",
+            "Format": "h5"
+        },
+        "BasePath": "/home/data/seam/Streamer/",
+        "SliceType": "Crop",
+        "Csg": "true",
+        "Files": [
+            {
+                "Input": {
+                    "Path": "Seam_blend_j_150ms.sgy"
+                },
+                "Target": {
+                    "Path": "Seam_clean.sgy"
+                },
+                "CustomProperties": {
+                    "synth": "01"
+                },
+                "NoOfCrops": 1000000,
+                "NoOfTraces": 100000,
+                "Visualization": {
+                    "ZoomCoordinates": {
+                        "Start": [0, 2000],
+                        "End": [100, 2100]
+                    }
+                }
+            },
+            {
+                "Input": {
+                    "Path": "Seam_blend_j_150ms.sgy"
+                },
+                "Target": {
+                    "Path": "Seam_clean.sgy"
+                },
+                "CustomProperties": {
+                    "synth": "02"
+                },
+                "NoOfCrops": 1000000,
+                "NoOfTraces": 100000,
+                "Visualization": {
+                    "ZoomCoordinates": {
+                        "Start": [0, 2000],
+                        "End": [100, 2100]
+                    }
+                }
+            }
+        ],
+        "CropWidth": 64,
+        "CropHeight": 64
+    },
+    "Training": {
+        "EpochEndSummary": true,
+        "CacheInRAM": false,
+        "TotalNodes": 2,
+        "GPUsPerNode": 4,
+        "ValidationPerc": 0.1,
+        "BatchSize": 64,
+        "TrainingNumWorkers": 8,
+        "ValidationNumWorkers": 8,
+        "TransformInput": [
+            {
+                "name": "zScoreTrainNormalizationDenoising",
+                "n_std": 3,
+                "DataFileInfoPath": "project_dataset/data/data_file_info.csv",
+                "DataCropsInfoPath": "project_dataset/data/data_crops.csv"
+            }
+        ],
+        "TransformTarget": [
+            {
+                "name": "zScoreTrainNormalizationDenoising",
+                "n_std": 3,
+                "DataFileInfoPath": "project_dataset/data/data_file_info.csv",
+                "DataCropsInfoPath": "project_dataset/data/data_crops.csv"
+            }
+        ],
+        "MonitorMetric": {
+            "name": "val_loss",
+            "mode": "min"
+        },
+        "EarlyStop": {
+            "Patience": 50,
+            "MinDelta": 0.001,
+            "MonitorMetric": {
+                "name": "val_loss",
+                "mode": "min"
+            }
+        },
+        "Optimizer": {
+            "Name": "SGD",
+            "lr": 0.01
+        },
+        "Scheduler": {
+            "Name": "StepLR",
+            "interval": "step",
+            "frequency": 1,
+            "args": {
+                "step_size": 10000,
+                "gamma": 0.96
+            }
+        },
+        "Loss": {
+            "Name": "L1Loss"
+        },
+        "Epochs": 1,
+        "ModelCheckpointPath": "model/",
+        "LogDir": "./resultados/logs/train"
+    },
+    "Testing": {
+        "LogDir": "./resultados/logs/test",
+        "CacheInRAM": false,
+        "Files": {
+            "BasePath": "/home/data/seam/Streamer/",
+            "Input": {
+                "Path": "Seam_blend_j_150ms.sgy"
+            },
+            "Target": {
+                "Path": "Seam_clean.sgy"
+            }
+        },
+        "NumNodes": 1,
+        "TotalNodes": 2,
+        "NumWorkers": 2,
+        "BatchSize": 2,
+        "TransformInput": [
+            {
+                "name": "zScoreTestNormalizationDenoising",
+                "n_std": 3,
+                "UseDatasetStats": true
+            }
+        ],
+        "TransformTarget": [
+            {
+                "name": "zScoreTestNormalizationDenoising",
+                "n_std": 3,
+                "UseDatasetStats": true
+            }
+        ]
+    },
+    "Model": {
+        "Topology": "FCNN",
+        "Type": "Img2Img",
+        "Layers": 5,
+        "FiltersPerLayer": 64,
+        "OutputChannels": 1,
+        "KernelSize": 9,
+        "Activation": "relu",
+        "BatchNormalization": 0,
+        "Seed": 42,
+        "InitializerName": "xavier"
+    },
+    "PostProcessing": {
+        "Process": [
+            {
+                "Name": "ShiftMean",
+                "Mean": 0
+            }
+        ]
+    },
+    "Export": {
+        "Path": "./resultados/segy/",
+        "HeaderFilePath": "/home/data/Seam_clean.sgy",
+        "OutputFormat": "sgy",
+        "FilePrefix": "test_data"
+    },
+    "Metrics": {
+        "MetricType": "Sample",
+        "OutPath": "./resultados/metrics/",
+        "OutFilename": "metrics.txt",
+        "Score": [
+            {
+                "ClassName": "SNR2",
+                "Name": "SNR2"
+            },
+            {
+                "ClassName": "PSNR",
+                "Name": "PSNR",
+                "DataRange": 2
+            },
+            {
+                "ClassName": "PSNR_Ref_Input",
+                "Name": "PSNR_Ref_Input",
+                "DataRange": 2
+            },
+            {
+                "ClassName": "MSE",
+                "Name": "MSE"
+            }
+        ]
+    },
+    "Visualization": {
+        "CompareTo": "Target",
+        "OutPath": "./resultados/img/",
+        "Views": [
+            {
+                "Name": "ShotsWithZoom",
+                "ZoomCoordinates": {
+                    "Start": [
+                        0,
+                        100
+                    ],
+                    "End": [
+                        100,
+                        200
+                    ]
+                },
+                "ShotIndex": 0,
+                "OutFileName": "shot0.png",
+                "UsePercentile": true
+            }
+        ]
+    }
+}
